@@ -1,4 +1,5 @@
-import 'package:firstflutter/BmiResult.dart';
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 void main() {
@@ -9,7 +10,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Flutter Demo',
+        title: 'StopWatch',
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
@@ -23,15 +24,15 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final _fromKey = GlobalKey<FormState>();
-  final _heightController = TextEditingController();
-  final _weightController = TextEditingController();
+  late Timer _timer;
+  var _time = 0;
+  var _isRunning = false;
+
+  List<String> _lapTimes = [];
 
   @override
   void dispose() {
-    _heightController.dispose();
-    _weightController.dispose();
-
+    _timer.cancel();
     super.dispose();
   }
 
@@ -39,64 +40,108 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('비만도 계산기'),
+        title: Text('StopWatch'),
       ),
-      body: Container(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _fromKey,
-          child: Column(
-            children: <Widget>[
-              TextFormField(
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(), hintText: '키'),
-                keyboardType: TextInputType.number,
-                controller: _heightController,
-                validator: (value) {
-                  if (value!.trim().isEmpty) {
-                    return '키를 입력하세요';
-                  } else {
-                    return null;
-                  }
-                },
-              ),
-              SizedBox(height: 16.0),
-              TextFormField(
-                decoration: InputDecoration(
-                    border: OutlineInputBorder(), hintText: '몸무게'),
-                keyboardType: TextInputType.number,
-                controller: _weightController,
-                validator: (value) {
-                  if (value!.trim().isEmpty) {
-                    return '몸무게를 입력하세요';
-                  } else {
-                    return null;
-                  }
-                },
-              ),
-              Container(
-                margin: const EdgeInsets.only(top: 16.0),
-                alignment: Alignment.center,
-                child: ElevatedButton(
-                  onPressed: () {
-                    if (_fromKey.currentState!.validate()) {
-                      // 검증 처리
-                      Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                              builder: (context) => BmiResult(
-                                  double.parse(_heightController.text.trim()),
-                                  double.parse(
-                                      _weightController.text.trim()))));
-                    }
-                  },
-                  child: Text('결과'),
+      body: _buildBody(),
+      bottomNavigationBar: BottomAppBar(
+        child: Container(height: 50.0),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => setState(() {
+          _clickButton();
+        }),
+        child: _isRunning ? Icon(Icons.pause) : Icon(Icons.play_arrow),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+    );
+  }
+
+  Widget _buildBody() {
+    var sec = _time ~/ 100;
+    var hundredth = '${_time % 100}'.padLeft(2, '0');
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.only(top: 30),
+        child: Stack(
+          children: <Widget>[
+            Column(
+              children: <Widget>[
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: <Widget>[
+                    Text(
+                      '$sec',
+                      style: TextStyle(fontSize: 50.0),
+                    ),
+                    Text('$hundredth')
+                  ],
                 ),
-              )
-            ],
-          ),
+                Container(
+                  width: 100,
+                  height: 200,
+                  child: ListView(
+                    children: _lapTimes.map((time) => Text(time)).toList(),
+                  ),
+                ),
+              ],
+            ),
+            Positioned(
+                left: 10,
+                bottom: 10,
+                child: FloatingActionButton(
+                    backgroundColor: Colors.deepOrange,
+                    child: Icon(Icons.rotate_left),
+                    onPressed: _reset)),
+            Positioned(
+                right: 10,
+                bottom: 10,
+                child: ElevatedButton(
+                    child: Text('랩타입'),
+                    onPressed: () {
+                      setState(() {
+                        _recordLapTime('$sec.$hundredth');
+                      });
+                    }))
+          ],
         ),
       ),
     );
+  }
+
+  void _clickButton() {
+    _isRunning = !_isRunning;
+
+    if (_isRunning) {
+      _start();
+    } else {
+      _pause();
+    }
+  }
+
+  void _start() {
+    _timer = Timer.periodic(Duration(microseconds: 10), (timer) {
+      setState(() {
+        _time++;
+      });
+    });
+  }
+
+  void _pause() {
+    _timer.cancel();
+  }
+
+  void _reset() {
+    setState(() {
+      _isRunning = false;
+      _timer.cancel();
+      _lapTimes.clear();
+      _time = 0;
+    });
+  }
+
+  void _recordLapTime(String time) {
+    _lapTimes.insert(0, '${_lapTimes.length + 1}등 $time');
   }
 }
