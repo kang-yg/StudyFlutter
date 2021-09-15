@@ -1,147 +1,165 @@
-import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
 
-void main() {
-  runApp(MyApp());
-}
+void main() => runApp(MaterialApp(home: QRViewExample()));
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-        title: 'StopWatch',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-        ),
-        home: MyHomePage());
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  late Timer _timer;
-  var _time = 0;
-  var _isRunning = false;
-
-  List<String> _lapTimes = [];
+class QRViewExample extends StatefulWidget {
+  const QRViewExample({
+    Key? key,
+  }) : super(key: key);
 
   @override
-  void dispose() {
-    _timer.cancel();
-    super.dispose();
+  State<StatefulWidget> createState() => _QRViewExampleState();
+}
+
+class _QRViewExampleState extends State<QRViewExample> {
+  Barcode? result;
+  QRViewController? controller;
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+
+  // In order to get hot reload to work we need to pause the camera if the platform
+  // is android, or resume the camera if the platform is iOS.
+  @override
+  void reassemble() {
+    super.reassemble();
+    if (Platform.isAndroid) {
+      controller?.pauseCamera();
+    }
+    controller?.resumeCamera();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('StopWatch'),
-      ),
-      body: _buildBody(),
-      bottomNavigationBar: BottomAppBar(
-        child: Container(height: 50.0),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => setState(() {
-          _clickButton();
-        }),
-        child: _isRunning ? Icon(Icons.pause) : Icon(Icons.play_arrow),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-    );
-  }
-
-  Widget _buildBody() {
-    var sec = _time ~/ 100;
-    var hundredth = '${_time % 100}'.padLeft(2, '0');
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.only(top: 30),
-        child: Stack(
-          children: <Widget>[
-            Column(
-              children: <Widget>[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: <Widget>[
+      body: Column(
+        children: <Widget>[
+          Expanded(flex: 4, child: _buildQrView(context)),
+          Expanded(
+            flex: 1,
+            child: FittedBox(
+              fit: BoxFit.contain,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: <Widget>[
+                  if (result != null)
                     Text(
-                      '$sec',
-                      style: TextStyle(fontSize: 50.0),
-                    ),
-                    Text('$hundredth')
-                  ],
-                ),
-                Container(
-                  width: 100,
-                  height: 200,
-                  child: ListView(
-                    children: _lapTimes.map((time) => Text(time)).toList(),
-                  ),
-                ),
-              ],
+                        'Barcode Type: ${describeEnum(result!.format)}   Data: ${result?.code}')
+                  else
+                    Text('Scan a code'),
+/*                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: <Widget>[
+                      Container(
+                        margin: EdgeInsets.all(8),
+                        child: RaisedButton(
+                            onPressed: () async {
+                              await controller?.toggleFlash();
+                              setState(() {});
+                            },
+                            child: FutureBuilder(
+                              future: controller?.getFlashStatus(),
+                              builder: (context, snapshot) {
+                                return Text('Flash: ${snapshot.data}');
+                              },
+                            )),
+                      ),
+                      Container(
+                        margin: EdgeInsets.all(8),
+                        child: RaisedButton(
+                            onPressed: () async {
+                              await controller?.flipCamera();
+                              setState(() {});
+                            },
+                            child: FutureBuilder(
+                              future: controller?.getCameraInfo(),
+                              builder: (context, snapshot) {
+                                if (snapshot.data != null) {
+                                  return Text(
+                                      'Camera facing ${describeEnum(snapshot.data.toString())}');
+                                } else {
+                                  return Text('loading');
+                                }
+                              },
+                            )),
+                      )
+                    ],
+                  ),*/
+/*                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: <Widget>[
+                      Container(
+                        margin: EdgeInsets.all(8),
+                        child: RaisedButton(
+                          onPressed: () async {
+                            await controller?.pauseCamera();
+                          },
+                          child: Text('pause', style: TextStyle(fontSize: 20)),
+                        ),
+                      ),
+                      Container(
+                        margin: EdgeInsets.all(8),
+                        child: RaisedButton(
+                          onPressed: () async {
+                            await controller?.resumeCamera();
+                          },
+                          child: Text('resume', style: TextStyle(fontSize: 20)),
+                        ),
+                      )
+                    ],
+                  ),*/
+                ],
+              ),
             ),
-            Positioned(
-                left: 10,
-                bottom: 10,
-                child: FloatingActionButton(
-                    backgroundColor: Colors.deepOrange,
-                    child: Icon(Icons.rotate_left),
-                    onPressed: _reset)),
-            Positioned(
-                right: 10,
-                bottom: 10,
-                child: ElevatedButton(
-                    child: Text('랩타입'),
-                    onPressed: () {
-                      setState(() {
-                        _recordLapTime('$sec.$hundredth');
-                      });
-                    }))
-          ],
-        ),
+          )
+        ],
       ),
     );
   }
 
-  void _clickButton() {
-    _isRunning = !_isRunning;
-
-    if (_isRunning) {
-      _start();
-    } else {
-      _pause();
-    }
+  Widget _buildQrView(BuildContext context) {
+    // For this example we check how width or tall the device is and change the scanArea and overlay accordingly.
+    var scanArea = (MediaQuery.of(context).size.width < 400 ||
+            MediaQuery.of(context).size.height < 400)
+        ? 150.0
+        : 300.0;
+    // To ensure the Scanner view is properly sizes after rotation
+    // we need to listen for Flutter SizeChanged notification and update controller
+    return QRView(
+      key: qrKey,
+      // You can choose between CameraFacing.front or CameraFacing.back. Defaults to CameraFacing.back
+      // cameraFacing: CameraFacing.front,
+      onQRViewCreated: _onQRViewCreated,
+      // Choose formats you want to scan. Defaults to all formats.
+      // formatsAllowed: [BarcodeFormat.qrcode],
+      overlay: QrScannerOverlayShape(
+        borderColor: Colors.red,
+        borderRadius: 10,
+        borderLength: 30,
+        borderWidth: 10,
+        cutOutSize: scanArea,
+      ),
+    );
   }
 
-  void _start() {
-    _timer = Timer.periodic(Duration(microseconds: 10), (timer) {
+  void _onQRViewCreated(QRViewController controller) {
+    setState(() {
+      this.controller = controller;
+    });
+    controller.scannedDataStream.listen((scanData) {
       setState(() {
-        _time++;
+        result = scanData;
       });
     });
   }
 
-  void _pause() {
-    _timer.cancel();
-  }
-
-  void _reset() {
-    setState(() {
-      _isRunning = false;
-      _timer.cancel();
-      _lapTimes.clear();
-      _time = 0;
-    });
-  }
-
-  void _recordLapTime(String time) {
-    _lapTimes.insert(0, '${_lapTimes.length + 1}등 $time');
+  @override
+  void dispose() {
+    controller?.dispose();
+    super.dispose();
   }
 }
