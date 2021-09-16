@@ -1,126 +1,53 @@
-import 'package:carousel_slider/carousel_slider.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-void main() => runApp(MaterialApp(home: CarouseSliderExample()));
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await EasyLocalization.ensureInitialized();
 
-class CarouseSliderExample extends StatefulWidget {
-  const CarouseSliderExample({
+  runApp(EasyLocalization(
+    child: MyEasyLocalizationStateless(),
+    supportedLocales: [Locale('en', 'US'), Locale('ko', 'KR')],
+    path: 'assets/translations',
+    fallbackLocale: Locale('en', 'US'),
+  ));
+}
+
+class MyEasyLocalizationStateless extends StatelessWidget {
+  const MyEasyLocalizationStateless({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'EasyLocalization',
+      home: MyEasyLocalizationStateful(),
+      localizationsDelegates: context.localizationDelegates,
+      supportedLocales: context.supportedLocales,
+      locale: context.locale,
+    );
+  }
+}
+
+class MyEasyLocalizationStateful extends StatefulWidget {
+  const MyEasyLocalizationStateful({
     Key? key,
   }) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _CarouseSliderExampleState();
+  State<StatefulWidget> createState() => _MyEasyLocalizationExampleState();
 }
 
-class _CarouseSliderExampleState extends State<CarouseSliderExample> {
+class _MyEasyLocalizationExampleState
+    extends State<MyEasyLocalizationStateful> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
           centerTitle: false,
-          title: Text(
-            'CarouseSliderExample',
-            textAlign: TextAlign.left,
-          ),
+          title: Text('EasyLocalization'),
           backgroundColor: Colors.greenAccent,
         ),
-        body: CarouselSlider(
-            items: items,
-            options: CarouselOptions(
-              height: 400,
-              aspectRatio: 16/9,
-              viewportFraction: 0.8,
-              initialPage: 0,
-              enableInfiniteScroll: true,
-              reverse: false,
-              autoPlay: true,
-              autoPlayInterval: Duration(seconds: 3),
-              autoPlayAnimationDuration: Duration(milliseconds: 800),
-              autoPlayCurve: Curves.fastOutSlowIn,
-              enlargeCenterPage: true,
-              onPageChanged: callbackFunction,
-              scrollDirection: Axis.horizontal,
-            )
-        ));
-  }
-
-  Widget _getPage(var index) {
-    var result;
-
-    switch (index) {
-      case 1:
-        result = _firstPage();
-        break;
-      case 2:
-        result = _secondPage();
-        break;
-
-      default:
-        result = _elsePage();
-        break;
-    }
-
-    return result;
-  }
-
-  Widget _firstPage() {
-    return Container(
-        width: MediaQuery.of(context).size.width,
-        decoration: BoxDecoration(color: Colors.amber),
-        child: ListView(
-          children: <Widget>[
-            SizedBox(
-              height: 10,
-            ),
-            ElevatedButton(
-                onPressed: () {
-                  print('AAA');
-                },
-                child: Text('Button')),
-            ListView(
-              physics: NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              children: List.generate(
-                  30,
-                  (index) => ListTile(
-                        title: Text('$index'),
-                      )),
-            )
-          ],
-        ));
-  }
-
-  Widget _secondPage() {
-    return Container(
-        width: MediaQuery.of(context).size.width,
-        decoration: BoxDecoration(color: Colors.white),
-        child: ListView(
-          children: <Widget>[
-            SizedBox(
-              height: 10,
-            ),
-            ElevatedButton(
-                onPressed: () {
-                  print('AAA');
-                },
-                child: Text('Button')),
-            ListView(
-              physics: NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              children: List.generate(
-                  30,
-                  (index) => ListTile(
-                        title: Text('$index'),
-                      )),
-            )
-          ],
-        ));
-  }
-
-  Widget _elsePage() {
-    return Center(
-      child: Text('else page'),
-    );
+        body: Center(child: Column(children: <Widget>[Text('hello').tr()])));
   }
 }
