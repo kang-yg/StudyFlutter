@@ -1,16 +1,10 @@
-import 'package:easy_localization/easy_localization.dart';
+import 'package:firstflutter/SampleRoute01.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await EasyLocalization.ensureInitialized();
-
-  runApp(EasyLocalization(
-    child: MyEasyLocalizationStateless(),
-    supportedLocales: [Locale('en', 'US'), Locale('ko', 'KR')],
-    path: 'assets/translations',
-    fallbackLocale: Locale('en', 'US'),
+void main() {
+  runApp(MaterialApp(
+    home: MyEasyLocalizationStateless(),
   ));
 }
 
@@ -22,9 +16,9 @@ class MyEasyLocalizationStateless extends StatelessWidget {
     return MaterialApp(
       title: 'EasyLocalization',
       home: MyEasyLocalizationStateful(),
-      localizationsDelegates: context.localizationDelegates,
-      supportedLocales: context.supportedLocales,
-      locale: context.locale,
+      routes: {
+        '/sample': (context) => SampleRoute01(),
+      },
     );
   }
 }
@@ -45,9 +39,17 @@ class _MyEasyLocalizationExampleState
     return Scaffold(
         appBar: AppBar(
           centerTitle: false,
-          title: Text('EasyLocalization'),
+          title: Text('Android back press button'),
           backgroundColor: Colors.greenAccent,
         ),
-        body: Center(child: Column(children: <Widget>[Text('hello').tr()])));
+        body: Column(
+          children: <Widget>[
+            ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, '/sample');
+                },
+                child: Text('버튼'))
+          ],
+        ));
   }
 }
