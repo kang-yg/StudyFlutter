@@ -4,52 +4,67 @@ import 'package:flutter/material.dart';
 
 void main() {
   runApp(MaterialApp(
-    home: MyEasyLocalizationStateless(),
+    home: MyPageTransitionStateless(),
   ));
 }
 
-class MyEasyLocalizationStateless extends StatelessWidget {
-  const MyEasyLocalizationStateless({Key? key}) : super(key: key);
+class MyPageTransitionStateless extends StatelessWidget {
+  const MyPageTransitionStateless({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'EasyLocalization',
-      home: MyEasyLocalizationStateful(),
-      routes: {
-        '/sample': (context) => SampleRoute01(),
-      },
+      title: 'Page transition animation',
+      home: MyPageTransitionStateful(),
     );
   }
 }
 
-class MyEasyLocalizationStateful extends StatefulWidget {
-  const MyEasyLocalizationStateful({
+class MyPageTransitionStateful extends StatefulWidget {
+  const MyPageTransitionStateful({
     Key? key,
   }) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _MyEasyLocalizationExampleState();
+  State<StatefulWidget> createState() => _MyPageTransitionState();
 }
 
-class _MyEasyLocalizationExampleState
-    extends State<MyEasyLocalizationStateful> {
+class _MyPageTransitionState
+    extends State<MyPageTransitionStateful> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
           centerTitle: false,
-          title: Text('Android back press button'),
+          title: Text('Page transition animation'),
           backgroundColor: Colors.greenAccent,
         ),
         body: Column(
           children: <Widget>[
             ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/sample');
+                  Navigator.of(context).push(_createRoute());
                 },
                 child: Text('버튼'))
           ],
         ));
   }
+}
+
+Route _createRoute() {
+  return PageRouteBuilder(
+    pageBuilder: (context, animation, secondaryAnimation) => SampleRoute01(),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      var begin = Offset(1.0, 0.0);
+      var end = Offset.zero;
+      var curve = Curves.ease;
+
+      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+
+      return SlideTransition(
+        position: animation.drive(tween),
+        child: child,
+      );
+    },
+  );
 }
