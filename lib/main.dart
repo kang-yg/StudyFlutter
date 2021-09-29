@@ -1,70 +1,81 @@
 import 'package:firstflutter/SampleRoute01.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+
+import 'Count.dart';
 
 void main() {
   runApp(MaterialApp(
-    home: MyPageTransitionStateless(),
+    home: StudyGetXStateless(),
   ));
 }
 
-class MyPageTransitionStateless extends StatelessWidget {
-  const MyPageTransitionStateless({Key? key}) : super(key: key);
+class StudyGetXStateless extends StatelessWidget {
+  const StudyGetXStateless({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Page transition animation',
-      home: MyPageTransitionStateful(),
+    return GetMaterialApp(
+      title: 'Study GetX',
+      home: StudyGetXStateful(),
+      getPages: [
+        GetPage(name: '/Sample01', page: () => SampleRoute01()),
+      ],
     );
   }
 }
 
-class MyPageTransitionStateful extends StatefulWidget {
-  const MyPageTransitionStateful({
+class StudyGetXStateful extends StatefulWidget {
+  const StudyGetXStateful({
     Key? key,
   }) : super(key: key);
 
   @override
-  State<StatefulWidget> createState() => _MyPageTransitionState();
+  State<StatefulWidget> createState() => _StudyGetXSState();
 }
 
-class _MyPageTransitionState
-    extends State<MyPageTransitionStateful> {
+class _StudyGetXSState extends State<StudyGetXStateful> {
+  final controller = Get.put(Count());
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          centerTitle: false,
-          title: Text('Page transition animation'),
-          backgroundColor: Colors.greenAccent,
-        ),
-        body: Column(
+      appBar: AppBar(
+        title: Text('Study GetX'),
+        backgroundColor: Colors.greenAccent,
+      ),
+      body: Center(
+        child: Column(
           children: <Widget>[
-            ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).push(_createRoute());
-                },
-                child: Text('버튼'))
+            TextButton(
+              child: Text('버튼'),
+              onPressed: () {
+                Get.to(SampleRoute01());
+              },
+            ),
+            GetBuilder<Count>(
+                builder: (_) =>
+                    Text('Simple way state: ${controller.simpleNum}')),
+            TextButton(
+                onPressed: controller.incrementSimpleNum,
+                child: Text('incrementSimple')),
+            SizedBox(
+              height: 30,
+            ),
+            // GetX<Count>(
+            //   builder: (_) =>
+            //       Text('Reactive way state: ${controller.rxNum.value}'),
+            // )
+            Obx(() {
+              return Text('Reactive way state: ${controller.rxNum.value}');
+            }),
+            TextButton(
+                onPressed: controller.incrementRxNum,
+                child: Text('incrementRx')),
           ],
-        ));
+        ),
+      ),
+    );
   }
-}
-
-Route _createRoute() {
-  return PageRouteBuilder(
-    pageBuilder: (context, animation, secondaryAnimation) => SampleRoute01(),
-    transitionsBuilder: (context, animation, secondaryAnimation, child) {
-      var begin = Offset(1.0, 0.0);
-      var end = Offset.zero;
-      var curve = Curves.ease;
-
-      var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-
-      return SlideTransition(
-        position: animation.drive(tween),
-        child: child,
-      );
-    },
-  );
 }
